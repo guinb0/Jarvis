@@ -1,80 +1,57 @@
-"""Baixa um modelo de voz Piper para a pasta `modelos/`.
+"""Baixa modelos de voz do Piper para a pasta `modelos/`.
 
     python scripts/baixar_voz.py                      # baixa a voz padrão
-    python scripts/baixar_voz.py pt_PT-tugão-medium   # baixa outra voz
+    python scripts/baixar_voz.py pt_BR-jeff-medium    # baixa outra voz
+    python scripts/baixar_voz.py --listar             # mostra as vozes em português
 
-Vozes em português disponíveis no repositório rhasspy/piper-voices:
-
-    pt_BR-faber-medium     masculina, brasileira  (padrão)
-    pt_BR-edresson-low     masculina, brasileira, mais leve
-    pt_PT-tugão-medium     masculina, de Portugal
+Usa o downloader oficial do Piper, que resolve a URL a partir do catálogo
+`voices.json` — assim novas vozes passam a funcionar sem mexer neste script.
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from urllib.parse import quote
-
-import requests
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
-from jarvis.configuracoes import PASTA_MODELOS, VOZ_PADRAO  # noqa: E402
-
-BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+from jarvis.configuracoes import PASTA_MODELOS, VOZES_EM_PORTUGUES, VOZ_PADRAO  # noqa: E402
 
 
-def url_do_modelo(nome_da_voz: str, extensao: str) -> str:
-    """Monta a URL a partir do nome da voz (ex.: pt_BR-faber-medium)."""
-    try:
-        idioma, locutor, qualidade = nome_da_voz.split("-")
-    except ValueError:
-        raise SystemExit(
-            f"Nome de voz inválido: '{nome_da_voz}'. "
-            "Use o formato idioma-locutor-qualidade, ex.: pt_BR-faber-medium"
-        )
-
-    familia = idioma.split("_")[0]
-    caminho = f"{familia}/{idioma}/{locutor}/{qualidade}/{nome_da_voz}{extensao}"
-    return f"{BASE}/{quote(caminho)}?download=true"
-
-
-def baixar(url: str, destino: Path) -> None:
-    if destino.exists():
-        print(f"  já existe: {destino.name}")
-        return
-
-    resposta = requests.get(url, stream=True, timeout=60)
-    if resposta.status_code == 404:
-        raise SystemExit(f"Voz não encontrada no repositório:\n  {url}")
-    resposta.raise_for_status()
-
-    total = int(resposta.headers.get("content-length", 0))
-    baixado = 0
-    parcial = destino.parent / (destino.name + ".parcial")
-
-    with parcial.open("wb") as arquivo:
-        for bloco in resposta.iter_content(chunk_size=1 << 16):
-            arquivo.write(bloco)
-            baixado += len(bloco)
-            if total:
-                print(f"\r  {destino.name}: {baixado * 100 // total}%", end="", flush=True)
-
-    parcial.replace(destino)
-    print(f"\r  {destino.name}: pronto ({baixado / 1e6:.1f} MB)")
+def listar() -> int:
+    print("Vozes em português disponíveis:\n")
+    largura = max(len(nome) for nome in VOZES_EM_PORTUGUES)
+    for nome, descricao in VOZES_EM_PORTUGUES.items():
+        padrao = "  (padrão)" if nome == VOZ_PADRAO else ""
+        print(f"  {nome.ljust(largura)}  {descricao}{padrao}")
+    print(f"\nBaixe com:  python scripts/baixar_voz.py {VOZ_PADRAO}")
+    return 0
 
 
 def main() -> int:
-    nome_da_voz = sys.argv[1] if len(sys.argv) > 1 else VOZ_PADRAO
+    argumentos = sys.argv[1:]
+    if "--listar" in argumentos or "-l" in argumentos:
+        return listar()
+
+    from piper.download_voices import download_voice
+
+    nome_da_voz = argumentos[0] if argumentos else VOZ_PADRAO
     PASTA_MODELOS.mkdir(parents=True, exist_ok=True)
 
-    print(f"Baixando a voz '{nome_da_voz}' para {PASTA_MODELOS}")
-    for extensao in (".onnx", ".onnx.json"):
-        baixar(url_do_modelo(nome_da_voz, extensao), PASTA_MODELOS / f"{nome_da_voz}{extensao}")
+    if (PASTA_MODELOS / f"{nome_da_voz}.onnx").exists():
+        print(f"A voz '{nome_da_voz}' já está baixada.")
+        return 0
 
-    print("\nTeste com:  python -m jarvis --dizer \"bom dia\"")
+    print(f"Baixando '{nome_da_voz}' para {PASTA_MODELOS}...")
+    try:
+        download_voice(nome_da_voz, PASTA_MODELOS)
+    except Exception as erro:
+        print(f"\nNão consegui baixar '{nome_da_voz}': {erro}", file=sys.stderr)
+        print("Veja os nomes válidos com:  python scripts/baixar_voz.py --listar", file=sys.stderr)
+        return 1
+
+    print(f'Pronto. Teste com:  python -m jarvis --dizer "bom dia"')
     return 0
 
 

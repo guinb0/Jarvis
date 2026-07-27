@@ -1,13 +1,13 @@
 # Síntese de voz (TTS) offline em português
-piper-tts>=1.2.0
+piper-tts>=1.6.0
 
-# Reprodução de áudio
-sounddevice>=0.4.6
-numpy>=1.24
+# Reconhecimento de fala (STT) offline em português
+faster-whisper>=1.2.0
 
-# Download dos modelos de voz
-requests>=2.31
+# Captura e reprodução de áudio
+sounddevice>=0.5
+numpy>=2.0
 
-# Reconhecimento de fala (opcional — instale quando for ativar o ouvido)
-# openai-whisper>=20231117
-# vosk>=0.3.45
+# Conversa aberta com o Claude — opcional.
+# Sem credencial configurada, o Jarvis funciona 100% offline pelos comandos.
+anthropic>=0.70
