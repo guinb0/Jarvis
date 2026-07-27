@@ -1,0 +1,29 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Modelos de voz (baixados via scripts/baixar_voz.py, pesam centenas de MB)
+modelos/
+*.onnx
+*.onnx.json
+
+# Áudio gerado em tempo de execução
+audio_temp/
+*.wav
+
+# Segredos e configuração local
+.env
+config.local.json
+
+# Editores / SO
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
