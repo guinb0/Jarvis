@@ -18,6 +18,31 @@ modelos/
 audio_temp/
 *.wav
 
+# Amostras baixadas para escolher a voz
+amostras-de-voz/
+
+# Saída do Jarvis quando ele roda sem janela
+jarvis.log
+
+# Frases gravadas com a voz clonada (regeráveis por scripts/gerar_frases_jarvis.py)
+frases-jarvis/
+
+# Áudio do filme usado como referência da clonagem: material de terceiros,
+# não vai para um repositório público.
+scripts/Voz do jarvis*.mp3
+amostras-de-voz/
+
+# Gerado por scripts/sincronizar_github.py a partir da sua conta. Lista
+# repositórios privados — não pode ir para um repositório público.
+memoria/projetos-github.md
+
+# Banco da memória (SQLite) e seus arquivos de journal
+modelos/memoria.db*
+
+# Índice vetorial antigo em arquivo (obsoleto — use Postgres)
+memoria/.indice/
+memoria/projetos-github.md
+
 # Segredos e configuração local
 .env
 config.local.json

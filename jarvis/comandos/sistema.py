@@ -5,6 +5,7 @@ from __future__ import annotations
 import ctypes
 import re
 import subprocess
+import threading
 import webbrowser
 
 from .base import Comando, normalizar
@@ -26,7 +27,7 @@ PROGRAMAS = {
     "paint": "mspaint.exe",
 }
 
-# Teclas de mídia do Windows, acionadas via keybd_event.
+# Teclas de mídia do Windows, acionadas via keybd_event (reserva do SetMute).
 VOLUME_MUDO = 0xAD
 VOLUME_ABAIXAR = 0xAE
 VOLUME_AUMENTAR = 0xAF
@@ -38,6 +39,25 @@ def apertar_tecla(codigo: int, vezes: int = 1) -> None:
     for _ in range(vezes):
         ctypes.windll.user32.keybd_event(codigo, 0, 0, 0)
         ctypes.windll.user32.keybd_event(codigo, 0, TECLA_SOLTA, 0)
+
+
+def definir_mudo(mutado: bool) -> None:
+    """Liga ou desliga o mudo do dispositivo de reprodução padrão.
+
+    Usa a API de áudio do Windows (pycaw). Se ela falhar, cai na tecla de
+    mídia — que só alterna, então é reserva imperfeita.
+    """
+    try:
+        from pycaw.pycaw import AudioUtilities
+
+        AudioUtilities.GetSpeakers().EndpointVolume.SetMute(1 if mutado else 0, None)
+    except Exception:
+        apertar_tecla(VOLUME_MUDO)
+
+
+def _mutar_depois_de_falar(segundos: float = 1.3) -> None:
+    """Atrasa o mute para a confirmação falada ainda sair no alto-falante."""
+    threading.Timer(segundos, lambda: definir_mudo(True)).start()
 
 
 class AbrirPrograma(Comando):
@@ -88,19 +108,39 @@ class Pesquisar(Comando):
 
 class Volume(Comando):
     nome = "volume"
-    descricao = "Controla o som: 'aumentar o volume', 'abaixar o volume', 'mudo'."
+    descricao = "Controla o som: mutar, desmutar, aumentar ou abaixar o volume."
     gatilhos = (
         "aumentar o volume", "aumenta o volume", "aumentar volume", "sobe o som",
         "abaixar o volume", "abaixa o volume", "diminuir o volume", "baixa o som",
-        "mudo", "sem som", "silencio",
+        "mutar", "mute", "mudo", "sem som", "silencio",
+        "desmutar", "unmute", "tirar o mudo", "com som", "ativar o som", "ativar som",
     )
 
     def executar(self, frase: str, config: dict) -> str:
         frase_normalizada = normalizar(frase)
 
-        if any(p in frase_normalizada for p in ("mudo", "sem som", "silencio")):
-            apertar_tecla(VOLUME_MUDO)
-            return "Som cortado."
+        # "desmutar" antes de "mutar" — senão "desmutar" casa no mutar.
+        if any(
+            p in frase_normalizada
+            for p in (
+                "desmutar",
+                "unmute",
+                "tirar o mudo",
+                "com som",
+                "ativar o som",
+                "ativar som",
+            )
+        ):
+            definir_mudo(False)
+            return "Som ligado."
+
+        if any(
+            p in frase_normalizada
+            for p in ("mutar", "mute", "mudo", "sem som", "silencio")
+        ):
+            # Fala a confirmação e só então corta o som.
+            _mutar_depois_de_falar()
+            return "Mutando."
 
         # Cada toque move o volume 2%; 5 toques dão um passo perceptível.
         if any(p in frase_normalizada for p in ("aumentar", "aumenta", "sobe")):

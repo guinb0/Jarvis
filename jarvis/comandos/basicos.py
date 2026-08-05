@@ -33,7 +33,26 @@ def periodo_do_dia(hora: int) -> str:
 class Saudacao(Comando):
     nome = "saudação"
     descricao = "Cumprimenta de volta conforme a hora do dia."
-    gatilhos = ("ola", "olá", "oi", "bom dia", "boa tarde", "boa noite", "e ai")
+    gatilhos = (
+        "ola",
+        "olá",
+        "oi",
+        "bom dia",
+        "boa tarde",
+        "boa noite",
+        "e ai",
+        "eae",
+        "tudo bem",
+        "tudo bom",
+        "tudo certo",
+        "como vai",
+        "como voce esta",
+        "como voce ta",
+        # Erros comuns do Whisper para "tudo bem".
+        "tudo de bem",
+        "tudo de web",
+        "tudo de ve",
+    )
 
     def executar(self, frase: str, config: dict) -> str:
         agora = datetime.now()
@@ -71,8 +90,18 @@ class Ajuda(Comando):
     def executar(self, frase: str, config: dict) -> str:
         from . import COMANDOS
 
-        linhas = [f"- {c.nome}: {c.descricao}" for c in COMANDOS]
-        return "Eu entendo o seguinte:\n" + "\n".join(linhas)
+        # Texto corrido para a TTS: sem hífen de lista nem dois-pontos.
+        nomes = [c.nome for c in COMANDOS]
+        if len(nomes) <= 1:
+            corpo = nomes[0] if nomes else "quase nada ainda"
+        elif len(nomes) == 2:
+            corpo = f"{nomes[0]} e {nomes[1]}"
+        else:
+            corpo = ", ".join(nomes[:-1]) + f" e {nomes[-1]}"
+        return (
+            f"Eu entendo pedidos como {corpo}, {config['tratamento']}. "
+            "Também dá para conversar livremente."
+        )
 
 
 class Encerrar(Comando):

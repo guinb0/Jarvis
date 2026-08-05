@@ -1,13 +1,29 @@
-# Síntese de voz (TTS) offline em português
+# Síntese de voz (TTS) natural, pela nuvem — motor padrão.
+# Só o texto da resposta sai da máquina; nenhum áudio é enviado.
+edge-tts>=7.0
+
+# Síntese de voz (TTS) offline em português — reserva, sem internet.
 piper-tts>=1.6.0
 
 # Reconhecimento de fala (STT) offline em português
 faster-whisper>=1.2.0
 
-# Captura e reprodução de áudio
+# Gatilho de teclado global — acorda o Jarvis só quando chamado
+pynput>=1.8
+
+# Captura e reprodução de áudio (soundfile decodifica o MP3 da Edge)
 sounddevice>=0.5
+soundfile>=0.12
 numpy>=2.0
 
+# Mute/unmute do Windows (volume do sistema) nos comandos de voz
+pycaw>=20240210
+comtypes>=1.4
+
 # Conversa aberta com o Claude — opcional.
-# Sem credencial configurada, o Jarvis funciona 100% offline pelos comandos.
+# Sem credencial configurada, o Jarvis funciona pelos comandos locais.
 anthropic>=0.70
+
+# Memória local com embeddings, em SQLite: arquivo único, sem servidor e sem
+# Docker. Fica em modelos/memoria.db; a busca por similaridade roda em numpy.
+fastembed>=0.5
